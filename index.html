@@ -273,23 +273,28 @@ async function iniciarScanner() {
     if (modo === 'nfe') {
 
       config = {
-        fps: 15,
+        fps: 20,
 
-        qrbox: function(width, height) {
+qrbox: function(width, height) {
 
-          return {
-            width:
-              Math.floor(width * 0.90),
+  return {
+    width: Math.floor(width * 0.96),
+    height: Math.floor(height * 0.45)
+  };
+},
 
-            height:
-              Math.floor(
-                Math.min(height * 0.32, 180)
-              )
-          };
-        },
+aspectRatio: 1.777778,
 
-        aspectRatio: 1.777778
-      };
+videoConstraints: {
+  facingMode: {
+    ideal: 'environment'
+  },
+
+  focusMode: {
+    ideal: 'continuous'
+  }
+}
+};
 
     } else {
 
