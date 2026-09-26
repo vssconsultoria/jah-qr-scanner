@@ -144,75 +144,97 @@ function atualizarStatus(texto, classe = '') {
 }
 
 
-function iniciarScanner() {
+async function iniciarScanner() {
 
   if (typeof Html5Qrcode === 'undefined') {
-
     atualizarStatus(
       'Não foi possível carregar o leitor de QR Code.',
       'error'
     );
-
     return;
   }
 
-  leitor = new Html5Qrcode('reader');
+  atualizarStatus('Solicitando acesso à câmera...');
 
-  const config = {
+  try {
 
-    fps: 12,
+    const cameras = await Html5Qrcode.getCameras();
 
-    qrbox: function(width, height) {
-
-      const tamanho =
-        Math.floor(Math.min(width, height) * 0.72);
-
-      return {
-        width: tamanho,
-        height: tamanho
-      };
-    },
-
-    aspectRatio: 1
-  };
-
-  atualizarStatus('Abrindo câmera...');
-
-  leitor.start(
-
-    {
-      facingMode: {
-        ideal: 'environment'
-      }
-    },
-
-    config,
-
-    qrCodeLido,
-
-    function() {
-      // Enquanto procura um QR Code,
-      // erros de leitura são normais.
+    if (!cameras || cameras.length === 0) {
+      throw new Error('Nenhuma câmera encontrada.');
     }
 
-  )
-  .then(function() {
+    console.log('Câmeras encontradas:', cameras);
+
+    // Por padrão usa a última câmera encontrada.
+    // Em celulares, normalmente é a câmera traseira.
+    let cameraEscolhida = cameras[cameras.length - 1];
+
+    // Se o navegador fornecer nomes, prioriza explicitamente a traseira.
+    const traseira = cameras.find(function(camera) {
+
+      const nome = String(camera.label || '').toLowerCase();
+
+      return (
+        nome.includes('back') ||
+        nome.includes('rear') ||
+        nome.includes('traseira') ||
+        nome.includes('environment')
+      );
+    });
+
+    if (traseira) {
+      cameraEscolhida = traseira;
+    }
+
+    leitor = new Html5Qrcode('reader');
+
+    const config = {
+      fps: 12,
+
+      qrbox: function(width, height) {
+
+        const tamanho =
+          Math.floor(Math.min(width, height) * 0.72);
+
+        return {
+          width: tamanho,
+          height: tamanho
+        };
+      },
+
+      aspectRatio: 1
+    };
+
+    atualizarStatus('Abrindo câmera...');
+
+    await leitor.start(
+      cameraEscolhida.id,
+      config,
+      qrCodeLido,
+      function() {
+        // Ignora falhas normais enquanto procura o QR.
+      }
+    );
 
     atualizarStatus(
       'Câmera pronta. Aponte para o QR Code da NFC-e.'
     );
 
-  })
-  .catch(function(erro) {
+  } catch (erro) {
 
-    console.error(erro);
+    console.error('ERRO CAMERA:', erro);
+
+    const detalhe =
+      erro && erro.message
+        ? erro.message
+        : String(erro);
 
     atualizarStatus(
-      'Não foi possível acessar a câmera. Verifique a permissão do navegador.',
+      'Erro ao acessar a câmera: ' + detalhe,
       'error'
     );
-
-  });
+  }
 }
 
 
