@@ -129,8 +129,6 @@
 
 <script>
 
-const APP_URL =
-  'https://script.google.com/macros/s/AKfycbxfAJ1HJmdLMNB-SooZtmFVjrIYxRH7ZfQysyK4I4Cmo_9Ib5yzNONU3Q6cct6qmVm2/exec';
 
 let leitor = null;
 let processando = false;
@@ -242,54 +240,65 @@ function qrCodeLido(texto) {
 
   if (processando) return;
 
-  const valor =
-    String(texto || '').trim();
+  const valor = String(texto || '').trim();
 
   if (!valor) return;
 
-  const valorMinusculo =
-    valor.toLowerCase();
-
   if (
-    !valorMinusculo.startsWith(
+    !valor.toLowerCase().startsWith(
       'https://www.nfce.fazenda.sp.gov.br/'
     )
   ) {
-
     atualizarStatus(
       'QR Code encontrado, mas ele não é uma NFC-e da SEFAZ-SP.',
       'error'
     );
-
     return;
   }
 
   processando = true;
 
   atualizarStatus(
-    'NFC-e encontrada! Retornando ao sistema...',
+    'NFC-e encontrada! Enviando para o sistema...',
     'success'
   );
 
-  const destino =
-  APP_URL +
-  '#nfce=' +
-  encodeURIComponent(valor) +
-  '&scanner=1';
+  function devolverParaJah() {
+
+    if (window.opener && !window.opener.closed) {
+
+      window.opener.postMessage(
+        {
+          tipo: 'JAH_NFCE_QR',
+          valor: valor
+        },
+        '*'
+      );
+
+      setTimeout(function() {
+        window.close();
+      }, 300);
+
+      return;
+    }
+
+    atualizarStatus(
+      'Não encontrei a janela do JAH. Volte ao sistema e tente novamente.',
+      'error'
+    );
+
+    processando = false;
+  }
 
   if (leitor) {
 
     leitor.stop()
       .catch(function() {})
-      .finally(function() {
-
-        window.location.replace(destino);
-
-      });
+      .finally(devolverParaJah);
 
   } else {
 
-    window.location.replace(destino);
+    devolverParaJah();
   }
 }
 
@@ -298,19 +307,24 @@ function voltarSemLeitura() {
 
   processando = true;
 
+  function fecharScanner() {
+
+    if (window.opener && !window.opener.closed) {
+      window.opener.focus();
+    }
+
+    window.close();
+  }
+
   if (leitor) {
 
     leitor.stop()
       .catch(function() {})
-      .finally(function() {
-
-        window.location.replace(APP_URL);
-
-      });
+      .finally(fecharScanner);
 
   } else {
 
-    window.location.replace(APP_URL);
+    fecharScanner();
   }
 }
 
