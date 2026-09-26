@@ -272,9 +272,10 @@ function qrCodeLido(texto) {
   );
 
   const destino =
-    APP_URL +
-    '#nfce=' +
-    encodeURIComponent(valor);
+  APP_URL +
+  '#nfce=' +
+  encodeURIComponent(valor) +
+  '&scanner=1';
 
   if (leitor) {
 
